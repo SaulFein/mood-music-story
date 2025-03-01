@@ -4,7 +4,6 @@ import { useNavigate } from "@builder.io/qwik-city";
 interface ImageUploadStore {
   imageData: string;
   genre: string;
-  mood: string;
   isLoading: boolean;
   error: string;
 }
@@ -13,7 +12,6 @@ export const ImageUpload = component$(() => {
   const store = useStore<ImageUploadStore>({
     imageData: "",
     genre: "",
-    mood: "",
     isLoading: false,
     error: "",
   });
@@ -23,7 +21,7 @@ export const ImageUpload = component$(() => {
 
   const processFile = $((file: File) => {
     if (!file.type.startsWith("image/")) {
-      store.error = "Please upload an image file";
+      store.error = "Please upload a selfie or photo of yourself";
       return;
     }
 
@@ -39,28 +37,43 @@ export const ImageUpload = component$(() => {
     reader.readAsDataURL(file);
   });
 
+  const handleFileInput = $((e: Event) => {
+    e.stopPropagation();
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) {
+      processFile(file);
+      // Reset the input value after processing
+      input.value = '';
+    }
+  });
+
+  const handleClick = $((e: MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (fileInputRef.value) {
+      fileInputRef.value.click();
+    }
+  });
+
   const handleDrop = $((e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
-    if (e.dataTransfer?.files) {
-      const file = e.dataTransfer.files[0];
-      if (file) {
-        processFile(file);
-      }
+    const file = e.dataTransfer?.files[0];
+    if (file) {
+      processFile(file);
     }
   });
 
-  const handleFileInput = $((e: Event) => {
-    const input = e.target as HTMLInputElement;
-    if (input.files?.length) {
-      processFile(input.files[0]);
+  const handleSubmit = $(async (e: Event) => {
+    e.stopPropagation();
+    if (!store.imageData) {
+      store.error = "Please upload a photo of yourself";
+      return;
     }
-  });
 
-  const handleSubmit = $(async () => {
-    if (!store.imageData || !store.genre || !store.mood) {
-      store.error = "Please select an image, genre, and mood";
+    if (!store.genre) {
+      store.error = "Please select a music genre";
       return;
     }
 
@@ -76,16 +89,14 @@ export const ImageUpload = component$(() => {
         body: JSON.stringify({
           image: store.imageData,
           genre: store.genre,
-          mood: store.mood,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate story");
+        throw new Error("Failed to analyze mood and generate playlist");
       }
 
       const data = await response.json();
-      // Navigate to results page with the data
       nav(
         "/results?" +
           new URLSearchParams({
@@ -94,7 +105,7 @@ export const ImageUpload = component$(() => {
           })
       );
     } catch (error) {
-      store.error = "Failed to process image";
+      store.error = "Failed to analyze your mood";
     } finally {
       store.isLoading = false;
     }
@@ -103,98 +114,97 @@ export const ImageUpload = component$(() => {
   return (
     <div
       class="space-y-6"
-      onDragOver$={(e) => e.preventDefault()}
+      preventdefault:dragover
       onDrop$={handleDrop}
     >
       <div
-        class={`cursor-pointer rounded-lg border-2 border-dashed p-8 transition-colors hover:border-purple-400 ${store.imageData ? "border-purple-500" : "border-purple-500/50"}`}
-        onClick$={() => fileInputRef.value?.click()}
+        class={`cursor-pointer rounded-lg border-2 border-dashed p-8 transition-colors hover:border-purple-400 ${
+          store.imageData ? "border-purple-500" : "border-purple-500/50"
+        }`}
       >
-        {store.imageData ? (
-          <img
-            src={store.imageData}
-            alt="Preview"
-            width={256}
-            height={256}
-            class="mx-auto max-h-64 rounded-lg object-contain"
-          />
-        ) : (
-          <div class="text-center">
-            <svg
-              class="mx-auto h-12 w-12 text-purple-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              />
-            </svg>
-            <p class="mt-2">Drop your image here or click to upload</p>
-            <p class="text-sm text-gray-400">
-              Share a moment, and we'll create your musical story
-            </p>
-          </div>
-        )}
+        <div 
+          class="w-full h-full"
+          onClick$={handleClick}
+        >
+          {store.imageData ? (
+            <img
+              src={store.imageData}
+              alt="Preview"
+              width={256}
+              height={256}
+              class="mx-auto max-h-64 rounded-lg object-contain"
+            />
+          ) : (
+            <div class="text-center">
+              <div class="mx-auto mb-4 h-12 w-12 text-purple-500">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"
+                  />
+                </svg>
+              </div>
+              <p class="mb-2 text-sm font-medium text-purple-500">
+                Upload a photo of yourself
+              </p>
+              <p class="text-xs text-purple-500/70">
+                Drag & drop or click to upload
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       <input
+        ref={fileInputRef}
         type="file"
         accept="image/*"
         class="hidden"
-        ref={fileInputRef}
         onChange$={handleFileInput}
       />
 
-      <div class="grid grid-cols-2 gap-4">
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-purple-300">
+          Select Music Genre
+        </label>
         <select
-          class="w-full rounded-lg border border-purple-500/30 bg-white/10 px-4 py-2"
+          class="w-full rounded-lg bg-purple-950/50 p-2 text-white"
           value={store.genre}
-          onChange$={(e) =>
-            (store.genre = (e.target as HTMLSelectElement).value)
-          }
+          onChange$={(e) => (store.genre = (e.target as HTMLSelectElement).value)}
         >
-          <option value="">Select Genre</option>
+          <option value="">Choose a genre</option>
           <option value="pop">Pop</option>
           <option value="rock">Rock</option>
+          <option value="hip-hop">Hip Hop</option>
           <option value="jazz">Jazz</option>
-          <option value="electronic">Electronic</option>
           <option value="classical">Classical</option>
-        </select>
-
-        <select
-          class="w-full rounded-lg border border-purple-500/30 bg-white/10 px-4 py-2"
-          value={store.mood}
-          onChange$={(e) =>
-            (store.mood = (e.target as HTMLSelectElement).value)
-          }
-        >
-          <option value="">Select Mood</option>
-          <option value="energetic">Energetic</option>
-          <option value="relaxed">Relaxed</option>
-          <option value="melancholic">Melancholic</option>
-          <option value="happy">Happy</option>
-          <option value="focused">Focused</option>
+          <option value="electronic">Electronic</option>
+          <option value="r&b">R&B</option>
         </select>
       </div>
 
       {store.error && (
-        <div class="text-center text-sm text-red-400">{store.error}</div>
+        <p class="text-center text-sm text-red-400">{store.error}</p>
       )}
 
       <button
-        class={`w-full rounded-lg py-3 font-semibold transition-all ${
-          store.isLoading
-            ? "cursor-not-allowed bg-purple-700 opacity-70"
-            : "bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90"
-        }`}
         onClick$={handleSubmit}
         disabled={store.isLoading}
+        class="w-full rounded-lg bg-purple-600 px-4 py-2 font-medium text-white transition-colors hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {store.isLoading ? "Generating..." : "Generate Musical Story"}
+        {store.isLoading ? "Analyzing your mood..." : "Analyze Mood & Create Playlist"}
       </button>
     </div>
   );
