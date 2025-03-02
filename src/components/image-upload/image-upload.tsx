@@ -81,7 +81,12 @@ export const ImageUpload = component$(() => {
     store.error = "";
 
     try {
-      const response = await fetch("/api/generate", {
+      // Determine if we're in development or production
+      const apiEndpoint = import.meta.env.DEV 
+        ? "/api/generate" 
+        : "/.netlify/functions/generate";
+        
+      const response = await fetch(apiEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

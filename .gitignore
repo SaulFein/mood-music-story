@@ -7,6 +7,7 @@
 # Development
 node_modules
 .env
+.env.local
 *.local
 
 # Cache
@@ -44,3 +45,8 @@ lerna-debug.log*
 # Vercel
 .vercel
 .output
+
+# Netlify
+.netlify
+netlify/functions/*.js.map
+netlify/functions/*.js
