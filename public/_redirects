@@ -1,0 +1,5 @@
+# API redirects
+/api/*  /.netlify/functions/:splat  200
+
+# Handle SPA routing - MUST be the last redirect rule
+/*  /index.html  200

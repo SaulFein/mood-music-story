@@ -7,15 +7,18 @@
   node_bundler = "esbuild"
   external_node_modules = ["openai", "spotify-web-api-node"]
 
+# API redirects
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
+# Handle SPA routing - MUST be the last redirect rule
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = true
 
 [dev]
   command = "npm run dev"
